@@ -1,7 +1,14 @@
 package main
 
-import ("fmt"; "log"; "net/http"; "io"; "encoding/json")
- 
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+)
+
+// Estruturas para armazenar os dados da API
 type ISSLocation struct {
 	Timestamp   int64 `json:"timestamp"`
 	ISSPosition struct {
@@ -11,35 +18,73 @@ type ISSLocation struct {
 	Message string `json:"message"`
 }
 
+type Astronauts struct {
+	Number  int `json:"number"`
+	People  []struct {
+		Name  string `json:"name"`
+		Craft string `json:"craft"`
+	} `json:"people"`
+	Message string `json:"message"`
+}
 
 func main() {
-	resp, err := http.Get("http://api.open-notify.org/iss-now.json")
+	// Buscar localização da ISS
+	location := fetchISSLocation()
+	fmt.Println("Localização atual da ISS:")
+	fmt.Printf("Latitude: %s\n", location.ISSPosition.Latitude)
+	fmt.Printf("Longitude: %s\n\n", location.ISSPosition.Longitude)
 
+	// Buscar astronautas no espaço
+	astronauts := fetchAstronauts()
+	fmt.Println("Astronautas no espaço:")
+	fmt.Printf("Total: %d\n", astronauts.Number)
+	for _, person := range astronauts.People {
+		fmt.Printf("Nome: %s | Nave: %s\n", person.Name, person.Craft)
+	}
+}
+
+// Função para buscar a localização da ISS
+func fetchISSLocation() ISSLocation {
+	url := "http://api.open-notify.org/iss-now.json"
+	resp, err := http.Get(url)
 	if err != nil {
-		fmt.Println("Erro ao fazer a requisição:", err)
-		return
+		log.Fatalf("Erro ao fazer requisição para localização da ISS: %v", err)
 	}
 	defer resp.Body.Close()
 
-	fmt.Println("Status:", resp.Status)
-
-	// Lendo o corpo da resposta
-	body,err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("Erro ao ler o corpo da resposta:", err)
+		log.Fatalf("Erro ao ler resposta da API de localização: %v", err)
 	}
-	fmt.Println("Corpo da resposta:", string(body))
 
-	// Decodificando o JSON
 	var location ISSLocation
-
 	err = json.Unmarshal(body, &location)
 	if err != nil {
-		log.Fatalf("Erro ao decodificar JSON: %v", err)
+		log.Fatalf("Erro ao decodificar JSON de localização: %v", err)
 	}
 
-	// Exibindo as informações úteis
-	fmt.Println("Localização atual da ISS:")
-	fmt.Printf("Latitude: %s\n", location.ISSPosition.Latitude)
-	fmt.Printf("Longitude: %s\n", location.ISSPosition.Longitude)
+	return location
+}
+
+// Função para buscar astronautas no espaço
+func fetchAstronauts() Astronauts {
+	url := "http://api.open-notify.org/astros.json"
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Fatalf("Erro ao fazer requisição para astronautas: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("Erro ao ler resposta da API de astronautas: %v", err)
+	}
+
+	var astronauts Astronauts
+	err = json.Unmarshal(body, &astronauts)
+	if err != nil {
+		log.Fatalf("Erro ao decodificar JSON de astronautas: %v", err)
+	}
+
+	return astronauts
 }
