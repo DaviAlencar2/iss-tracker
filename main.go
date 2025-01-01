@@ -32,7 +32,8 @@ func main() {
 	location := fetchISSLocation()
 	fmt.Println("Localização atual da ISS:")
 	fmt.Printf("Latitude: %s\n", location.ISSPosition.Latitude)
-	fmt.Printf("Longitude: %s\n\n", location.ISSPosition.Longitude)
+	fmt.Printf("Longitude: %s\n", location.ISSPosition.Longitude)
+	fmt.Printf("Detalhes: %s\n\n", fetchLocationDetails(location.ISSPosition.Latitude, location.ISSPosition.Longitude))
 
 	// Buscar astronautas no espaço
 	astronauts := fetchAstronauts()
@@ -87,4 +88,46 @@ func fetchAstronauts() Astronauts {
 	}
 
 	return astronauts
+}
+
+type LocationDetails struct {
+	Latitude     float64 `json:"latitude"`
+	Longitude    float64 `json:"longitude"`
+	LocalityInfo struct {
+		Informative []struct {
+			Name        string `json:"name"`
+			Description string `json:"description"`
+		} `json:"informative"`
+	} `json:"localityInfo"`
+}
+
+func fetchLocationDetails(latitude, longitude string) string {
+	url := fmt.Sprintf("https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=%s&longitude=%s&localityLanguage=pt", latitude, longitude)
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Fatalf("Erro ao fazer requisição para localização: %v", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatalf("Erro ao ler resposta da API: %v", err)
+	}
+
+	// fmt.Println("Resposta da API:", string(body)) // Debug da resposta
+
+	var location LocationDetails
+	err = json.Unmarshal(body, &location)
+	if err != nil {
+		log.Fatalf("Erro ao decodificar JSON da localização: %v", err)
+	}
+
+	// Verificar se há informações disponíveis
+	if len(location.LocalityInfo.Informative) > 0 {
+		// Usar o primeiro elemento como exemplo
+		info := location.LocalityInfo.Informative[0]
+		return fmt.Sprintf("Nome: %s, Descrição: %s", info.Name, info.Description)
+	}
+
+	return "Informações não disponíveis para esta localização"
 }
