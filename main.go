@@ -114,7 +114,7 @@ func fetchLocationDetails(latitude, longitude string) string {
 		log.Fatalf("Erro ao ler resposta da API: %v", err)
 	}
 
-	// fmt.Println("Resposta da API:", string(body)) // Debug da resposta
+	// fmt.Println("Resposta da API:", string(body))' // Debug da resposta
 
 	var location LocationDetails
 	err = json.Unmarshal(body, &location)
@@ -126,7 +126,7 @@ func fetchLocationDetails(latitude, longitude string) string {
 	if len(location.LocalityInfo.Informative) > 0 {
 		// Usar o primeiro elemento como exemplo
 		info := location.LocalityInfo.Informative[0]
-		return fmt.Sprintf("Nome: %s, Descrição: %s", info.Name, info.Description)
+		return fmt.Sprintf("\n Nome: %s\n Descrição: %s\n", info.Name, info.Description)
 	}
 
 	return "Informações não disponíveis para esta localização"
